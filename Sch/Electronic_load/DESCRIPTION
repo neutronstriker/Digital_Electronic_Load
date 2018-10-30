@@ -1,0 +1,11 @@
+One more idiotic thing that you did was that you forgot to give a little space from the 2 OHM resistors for the main Power IN header (LOAD).
+
+Including the disconnection of the TPL0102 HA pin which should have been routed to 5V+.
+
+Remember to check for these next time including the cutting down trace issue of AREF -A0 pin.
+
+you could have also added an NMOS on load side to disconnect load in case of emergency.
+
+And one more switch would be a better idea for good software UI.
+
+Also change the I2C pullup resistors to either 4.7k or 2.2k because bus is hanging a lot because of lower pullup values.
