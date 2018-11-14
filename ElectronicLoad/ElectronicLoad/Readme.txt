@@ -72,3 +72,7 @@ is always same.
  Dt:29-10-2018:
  Added Serial command capability for setting current and turning on and off the load.
  This was done in a hurry for a specific task, so we will need to clean it up sometime when possible.
+
+ Dt:14-11-2018:
+ Added temp?, tset and help commands
+ which will get the LM35 temperature value, set the safe operating temperature threshold and display commands usage

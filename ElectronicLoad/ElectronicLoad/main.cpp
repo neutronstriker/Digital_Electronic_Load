@@ -173,7 +173,7 @@ const char PROGMEM cmd7[]="vbus?";		//will return vbus value
 const char PROGMEM cmd8[]="temp?";		//will return the temperature of the active load
 const char PROGMEM cmd9[]="tset";		//set the safe temperature limit of the active load
 const char PROGMEM cmd10[]="help";		//will print available commands and their usage
-
+const char PROGMEM cmd11[]="tset?";		//will print the current safe temperature setting value
 
 
 void readSerialCmd();
@@ -996,29 +996,39 @@ void readSerialCmd()
 				//serial debug messages here
 			#endif // PRINT_DEBUG_MSG			
 			
+			//cmd5 if block should be before cmd1, because they have the same first 4 chars
+			if(strcmp_P(btCmdReplyBuffer,cmd5)==0)
+			{
+				
+				Serial.print(F_STR("ISET:"));
+				Serial.print(iValueSetting);
+				Serial.println(F_STR("mA"));
+				
+				
+			}
 			
-			 if(strncmp_P(btCmdReplyBuffer,cmd1,4)==0)
-			 {
-				 uint16_t iSetVal = 0;
-				 strncpy(numeric,btCmdReplyBuffer+4,uartBufCharCount-(4));
-				 
-				 iSetVal=atoi(numeric);
-				 
-				 #ifdef PRINT_DEBUG_MSG
-					 Serial.print(F_STR("iset val is "));
-					 Serial.println(iSetVal);
-				 #endif
-				 
-				 if (iSetVal > MAX_SUPPORTED_CURRENT)
-				 {
-					 Serial.println(F_STR("ERROR_1"));
-					 return;
-				 }
-				 
-				 iValueSetting = iSetVal;
-				 
-				 replyOK();
-			 }
+			else if(strncmp_P(btCmdReplyBuffer,cmd1,4)==0)
+			{
+				uint16_t iSetVal = 0;
+				strncpy(numeric,btCmdReplyBuffer+4,uartBufCharCount-(4));
+				
+				iSetVal=atoi(numeric);
+				
+				#ifdef PRINT_DEBUG_MSG
+				Serial.print(F_STR("iset val is "));
+				Serial.println(iSetVal);
+				#endif
+				
+				if (iSetVal > MAX_SUPPORTED_CURRENT)
+				{
+					Serial.println(F_STR("ERROR_1"));
+					return;
+				}
+				
+				iValueSetting = iSetVal;
+				
+				replyOK();
+			}
 			
 			
 		
@@ -1052,23 +1062,13 @@ void readSerialCmd()
 				
 			}
 			
-			else if(strcmp_P(btCmdReplyBuffer,cmd5)==0)
-			{
-				
-				Serial.print(F_STR("ISET:"));
-				Serial.print(iValueSetting);
-				Serial.print(F_STR("mA"));
-				
-				
-			}
-			
 			#ifdef INA226_ENABLE
 				else if(strcmp_P(btCmdReplyBuffer,cmd6)==0)
 				{
 					
 					Serial.print(F_STR("IBUS:"));
-					Serial.print(iShuntVal);
-					Serial.print(F_STR("mA"));
+					Serial.print(iShuntVal,3);
+					Serial.println(F_STR("A"));
 				}
 				
 				else if(strcmp_P(btCmdReplyBuffer,cmd7)==0)
@@ -1076,7 +1076,7 @@ void readSerialCmd()
 					
 					Serial.print(F_STR("VBUS:"));
 					Serial.print(vBusVal);
-					Serial.print(F_STR("V"));
+					Serial.println(F_STR("V"));
 				}
 			#endif
 			
@@ -1085,7 +1085,15 @@ void readSerialCmd()
 				
 				Serial.print(F_STR("TEMPERATURE:"));
 				Serial.print(temperature);
-				Serial.print(F_STR("C"));
+				Serial.println(F_STR("C"));
+			}
+			
+			//cmd11 elif block should be before cmd9, because they have the same first 4 chars
+			else if(strcmp_P(btCmdReplyBuffer,cmd11)==0)
+			{
+				Serial.print(F_STR("TEMPERATURE THRESHOLD SET:"));
+				Serial.print(activeLoadTempThreshold);
+				Serial.println(F_STR("C"));
 			}
 			
 			
@@ -1132,16 +1140,18 @@ void readSerialCmd()
 
 void usage(){
 	
-	Serial.println(F_STR("iset <current in mA>		:	set current value								 "));
-	Serial.println(F_STR("ion						:	turn on load									 "));
-	Serial.println(F_STR("ioff						:	turn off load									 "));
-	Serial.println(F_STR("stat?						:	will return status ON or OFF					 "));
-	Serial.println(F_STR("iset?						:	will return iset value							 "));
-	Serial.println(F_STR("ibus?						:	will return ishunt value						 "));
-	Serial.println(F_STR("vbus?						:	will return vbus value							 "));
-	Serial.println(F_STR("temp?						:	will return the temperature of the active load	 "));
-	Serial.println(F_STR("tset <temperature in C>	:	set the safe temperature limit of the active load"));
-	Serial.println(F_STR("help						:	will print available commands and their usage"	  ));
+	Serial.println(F_STR("This is the help message, you will find usage below								 "));
+	Serial.println(F_STR("iset <current in mA>		:	set current value									 "));
+	Serial.println(F_STR("ion						:	turn on load										 "));
+	Serial.println(F_STR("ioff						:	turn off load										 "));
+	Serial.println(F_STR("stat?						:	will return status ON or OFF						 "));
+	Serial.println(F_STR("iset?						:	will return iset value								 "));
+	Serial.println(F_STR("ibus?						:	will return ishunt value							 "));
+	Serial.println(F_STR("vbus?						:	will return vbus value								 "));
+	Serial.println(F_STR("temp?						:	will return the temperature of the active load		 "));
+	Serial.println(F_STR("tset <temperature in C>	:	set the safe temperature limit of the active load	 "));
+	Serial.println(F_STR("tset?						:	will print the current safe temperature setting value"));
+	Serial.println(F_STR("help						:	will print available commands and their usage		 "));
 
 	
 }
