@@ -103,15 +103,18 @@ uint8_t temperature;
 GPIO output_sw(2);
 uint8_t loadON=0;
 
-#define	ABSOLUTE_MAX_TEMP	90
-#define	WARNING_TEMP		60
-
 uint8_t int1_count=0;
 uint16_t knob_click_value=1;		//default click value is 1 per knob click in any direction.
 
 #include <avr/wdt.h>
 
+#define	ABSOLUTE_MAX_TEMP	90
+#define	WARNING_TEMP		60
+
+uint8_t activeLoadTempThreshold = ABSOLUTE_MAX_TEMP;
+
 #define MAX_SUPPORTED_CURRENT 2000		//in mA
+#define ACTIVE_LOAD_TJ_C		150		//in Degree celcius, actual max is 200, but the sensor LM35 supported value is 150, and further more there will be Rjc
 
 //there are two errors because of which my reading were not matching, 
 //1.The Voltage ref of VCC is not constant 5000mV as a result the multiplication factor 4.88 to get voltage is not proper
@@ -167,10 +170,16 @@ const char PROGMEM cmd4[]="stat?";		//will return status ON or OFF
 const char PROGMEM cmd5[]="iset?";		//will return iset value
 const char PROGMEM cmd6[]="ibus?";		//will return ishunt value
 const char PROGMEM cmd7[]="vbus?";		//will return vbus value
+const char PROGMEM cmd8[]="temp?";		//will return the temperature of the active load
+const char PROGMEM cmd9[]="tset";		//set the safe temperature limit of the active load
+const char PROGMEM cmd10[]="help";		//will print available commands and their usage
+
+
 
 void readSerialCmd();
 uint8_t readUntilToken(char* buffer, uint8_t token, uint8_t maxlen);
 void replyOK();
+void usage();
 
 uint8_t case_sensitivity_status=0;
 
@@ -305,7 +314,7 @@ void loop()
 	//////////////////////////// OUTPUT ENABLE SWITCH LOGIC //////////////////////////////
 	if(loadON)
 	{
-		if (temperature < ABSOLUTE_MAX_TEMP)		//temperature less than 90 degree celcius.
+		if (temperature < activeLoadTempThreshold)		//temperature less than 90 degree celcius.
 		{
 			
 			
@@ -330,7 +339,7 @@ void loop()
 		}
 		else
 		{
-			loadON = 0;		//Turn OFF DEVICE When temperature exceeds ABSOLUTE_MAX_TEMP
+			loadON = 0;		//Turn OFF DEVICE When temperature exceeds "activeLoadTempThreshold"
 		}
 		
 		
@@ -1071,6 +1080,46 @@ void readSerialCmd()
 				}
 			#endif
 			
+			else if(strcmp_P(btCmdReplyBuffer,cmd8)==0)
+			{
+				
+				Serial.print(F_STR("TEMPERATURE:"));
+				Serial.print(temperature);
+				Serial.print(F_STR("C"));
+			}
+			
+			
+			else if(strncmp_P(btCmdReplyBuffer,cmd9,4)==0)
+			{
+				
+				uint16_t tSetVal = 0;
+				strncpy(numeric,btCmdReplyBuffer+4,uartBufCharCount-(4));
+				
+				tSetVal=atoi(numeric);
+				
+				#ifdef PRINT_DEBUG_MSG
+					Serial.print(F_STR("tset val is "));
+					Serial.println(tSetVal);
+				#endif
+				
+				if (tSetVal > ACTIVE_LOAD_TJ_C)
+				{
+					Serial.println(F_STR("ERROR_1"));
+					return;
+				}
+				
+				activeLoadTempThreshold = tSetVal;
+				
+				replyOK();
+			}
+			
+			else if(strcmp_P(btCmdReplyBuffer,cmd10)==0)
+			{
+				
+				usage();
+			}
+			
+			
 			else
 			{
 				Serial.println(F_STR("ERROR(!)"));	
@@ -1080,6 +1129,22 @@ void readSerialCmd()
 		
 }
 
+
+void usage(){
+	
+	Serial.println(F_STR("iset <current in mA>		:	set current value								 "));
+	Serial.println(F_STR("ion						:	turn on load									 "));
+	Serial.println(F_STR("ioff						:	turn off load									 "));
+	Serial.println(F_STR("stat?						:	will return status ON or OFF					 "));
+	Serial.println(F_STR("iset?						:	will return iset value							 "));
+	Serial.println(F_STR("ibus?						:	will return ishunt value						 "));
+	Serial.println(F_STR("vbus?						:	will return vbus value							 "));
+	Serial.println(F_STR("temp?						:	will return the temperature of the active load	 "));
+	Serial.println(F_STR("tset <temperature in C>	:	set the safe temperature limit of the active load"));
+	Serial.println(F_STR("help						:	will print available commands and their usage"	  ));
+
+	
+}
 
 uint8_t readUntilToken(char* buffer, uint8_t token, uint8_t maxlen)
 {
